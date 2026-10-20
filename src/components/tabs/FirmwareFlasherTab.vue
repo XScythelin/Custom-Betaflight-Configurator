@@ -124,6 +124,8 @@
 
 <script>
 import { computed, defineComponent, reactive, ref, onMounted, onBeforeUnmount, inject, nextTick } from "vue";
+import { takeDdHex } from "../../composables/useDdProgrammer";
+import { switchTab } from "../../js/tab_switch";
 import BaseTab from "./BaseTab.vue";
 import WikiButton from "../elements/WikiButton.vue";
 import { i18n } from "../../js/localization";
@@ -362,9 +364,21 @@ export default defineComponent({
                 state.lastFlashResultClass = state.progressLabelClass;
             }
 
+            if (ddFlashActive && type === FLASH_MESSAGE_TYPES.VALID && message === $t("stm32ProgrammingSuccessful")) {
+                ddFlashActive = false;
+                const returnHome = () => {
+                    if (GUI.connect_lock || GUI.flashingInProgress) {
+                        GUI.timeout_add("dd_return_home", returnHome, 100);
+                        return;
+                    }
+                    switchTab("landing", { mode: "disconnected", label: "Главная" });
+                };
+                GUI.timeout_add("dd_return_home", returnHome, 100);
+            }
             return TABS.firmware_flasher;
         };
 
+        let ddFlashActive = false;
         const flashProgress = (value) => {
             const n = Number(value);
             if (!Number.isFinite(n)) {
@@ -1040,6 +1054,29 @@ export default defineComponent({
 
             // Localize content
             i18n.localizePage();
+            const ddHex = takeDdHex();
+            if (ddHex) {
+                ddFlashActive = true;
+                try {
+                    const targetPath = DeviceHandler.devicePicker.selectedDevice;
+                    const target = [...DeviceHandler.currentUsbPorts, ...DeviceHandler.currentSerialPorts].find(
+                        (device) => device.path === targetPath,
+                    );
+                    if (!target)
+                        throw new Error("Полётник не обнаружен. Выберите COM-порт или USB DFU на главной странице.");
+                    activeFlasherStep.value = "flash";
+                    state.eraseChip = true;
+                    state.noRebootSequence = targetPath.startsWith("usb");
+                    state.flashOnConnect = false;
+                    state.developmentFirmwareLoaded = false;
+                    await processFirmwareFile(ddHex, "hex", await ddHex.text());
+                    await nextTick();
+                    await handleFlashFirmware(true);
+                } catch (error) {
+                    console.error("[DD programmer]", error);
+                    gui_log(`DD: ${error.message}`);
+                }
+            }
         });
 
         const teardownEventBusListeners = () => {
@@ -1487,7 +1524,7 @@ export default defineComponent({
             });
         };
 
-        const handleFlashFirmware = async () => {
+        const handleFlashFirmware = async (ddMode = false) => {
             if (state.flashButtonDisabled || activeFlasherStep.value !== "flash") {
                 return;
             }
@@ -1510,7 +1547,8 @@ export default defineComponent({
                 firmwareType: state.firmware_type,
                 filename: state.filename,
                 flashOnConnect: state.flashOnConnect,
-                portAvailable: DeviceHandler.portAvailable,
+                // DD starts immediately without the optional pre-flash backup workflow.
+                portAvailable: ddMode === true ? false : DeviceHandler.portAvailable,
                 dfuAvailable: DeviceHandler.dfuAvailable,
                 preservePreFlashingState,
                 enableFlashButton,

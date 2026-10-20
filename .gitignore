@@ -56,3 +56,7 @@ components.d.ts
 /*.pem
 /CLAUDE.md
 /.claude
+
+# Portable Windows launcher runtime and local logs
+/.runtime/
+/.local-run/

@@ -11,7 +11,17 @@ import { resolve } from "path";
 import ui from "@nuxt/ui/vite";
 import nuxtUiViteOptions from "./nuxt-ui.vite.js";
 
-const commitHash = child.execSync("git rev-parse --short HEAD").toString().trim();
+const commitHash = (() => {
+    try {
+        return child
+            .execSync("git rev-parse --short HEAD", { stdio: ["ignore", "pipe", "ignore"] })
+            .toString()
+            .trim();
+    } catch {
+        // Source archives may not include Git or repository metadata.
+        return "source-archive";
+    }
+})();
 
 const devHostname = process.env.BF_DEV_HOSTNAME || "local.betaflight.com";
 

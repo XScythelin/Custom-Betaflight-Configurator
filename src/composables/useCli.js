@@ -275,32 +275,26 @@ export function useCli() {
 
         const COMMANDS_PER_TICK = 3; // lines per tick; profile commands always get their own tick
 
-        function sendCommandIterative(commandArray) {
-            let processingDelay = state.lineDelayMs;
-
-            for (let n = 0; n < COMMANDS_PER_TICK && commandArray.length > 0; n++) {
-                const command = commandArray.shift();
-                let line = command.trim();
-                const isLast = commandArray.length === 0;
-
-                if (isLast && cliBuffer) {
-                    line = getCliCommand(line, cliBuffer);
+        await new Promise((resolve) => {
+            const originalSendLine = sendLine;
+            // Resolve only after the last scheduled batch has been queued.
+            function queueBatch() {
+                let delay = state.lineDelayMs;
+                for (let n = 0; n < COMMANDS_PER_TICK && outputArray.length; n++) {
+                    const command = outputArray.shift().trim();
+                    const last = outputArray.length === 0;
+                    const line = last && cliBuffer ? getCliCommand(command, cliBuffer) : command;
+                    originalSendLine(line);
+                    if (command.toLowerCase().startsWith("profile")) {
+                        delay = state.profileSwitchDelayMs;
+                        break;
+                    }
                 }
-
-                const isProfile = line.toLowerCase().startsWith("profile");
-                if (isProfile) processingDelay = state.profileSwitchDelayMs;
-
-                sendLine(line);
-
-                if (isLast || isProfile) break;
+                if (outputArray.length) GUI.timeout_add("CLI_send_slowly", queueBatch, delay);
+                else resolve();
             }
-
-            if (commandArray.length > 0) {
-                GUI.timeout_add("CLI_send_slowly", () => sendCommandIterative(commandArray), processingDelay);
-            }
-        }
-
-        sendCommandIterative(outputArray);
+            queueBatch();
+        });
     };
 
     const loadFile = async () => {
@@ -809,6 +803,9 @@ export function useCli() {
         showSupportWarningDialog,
         read,
         sendLine,
+        executeCommands,
+        getOutputHistory: () => outputHistory,
+        isDdReady: () => !CliAutoComplete.isBuilding() && Date.now() - state.lastArrival > SERIAL_IDLE_MS,
         isSupportRequestAvailable,
         adaptPhones,
     };

@@ -139,13 +139,16 @@ const activeItems = computed(() =>
 
 const visibleItems = computed(() =>
     activeItems.value.map((item) => ({
-        label: t(item.i18n),
+        label: item.key === "landing" ? "Главная" : t(item.i18n),
         icon: item.icon,
         active: vueTabState.activeTabName === (item.tab ?? item.key),
-        tooltip: { text: t(item.i18n) },
+        tooltip: { text: item.key === "landing" ? "Главная" : t(item.i18n) },
         onSelect: (event) => {
             event?.preventDefault?.();
-            switchTab(item.tab ?? item.key, { mode: item.mode, label: t(item.i18n) });
+            switchTab(item.tab ?? item.key, {
+                mode: item.mode,
+                label: item.key === "landing" ? "Главная" : t(item.i18n),
+            });
             closeMobileSidebar();
         },
     })),

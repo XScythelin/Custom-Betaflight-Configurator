@@ -1,3 +1,11 @@
+// Apply portable defaults once, including to an existing local installation.
+if (!localStorage.getItem("portableDefaultsV1")) {
+    localStorage.setItem("expertMode", JSON.stringify({ expertMode: true }));
+    localStorage.setItem("meteredConnection", JSON.stringify({ meteredConnection: true }));
+    localStorage.setItem("analyticsOptOut", JSON.stringify({ analyticsOptOut: true }));
+    localStorage.setItem("portableDefaultsV1", "true");
+}
+
 /**
  * Gets one or more items from localStorage
  * @param {string | string[]} key string or array of strings

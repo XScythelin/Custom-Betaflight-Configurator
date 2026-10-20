@@ -1,0 +1,25 @@
+import { strict as assert } from 'node:assert';
+import { compareDump, dumpCommands } from '../src/js/utils/ddDumpComparison.ts';
+
+assert.deepEqual(dumpCommands('\uFEFF# comment\r\nset a = 1\r\nsave\n'), ['set a = 1', 'save']);
+assert.deepEqual(dumpCommands('\n  # version\n# Betaflight / STM32F405\n\n  set a = 1  \n\n# save configuration\nsave\n'), ['set a = 1', 'save']);
+const source = '# master\nset name = A\nprofile 0\nset gain = 12\nprofile 1\nset gain = 20\nfeature GPS\nfeature -OSD\nserial 0 64 115200 57600 0 115200\nsave';
+const actual = '# master\nset name = A\nprofile 0\nset gain = 12\nprofile 1\nset gain = 21\nfeature GPS\nfeature OSD';
+const result = compareDump(source, actual);
+assert.equal(result.matched.length, 3);
+assert.equal(result.mismatched.length, 3);
+assert.equal(result.unchecked.length, 0);
+assert.ok(result.mismatched.some(line => line.startsWith('p1:gain')));
+assert.equal(compareDump('set absent = 1', '# master\nset other = 1').mismatched.length, 1);
+assert.equal(compareDump('set gain = 12', actual).mismatched.length, 1);
+assert.equal(compareDump('feature GPS\nfeature -GPS', 'feature -GPS').mismatched.length, 0);
+console.log('DD dump comparison tests passed');
+const rows = 'board_name TEST\nmanufacturer_id TEST\nmcu_id 123\nsignature\nresource MOTOR 1 B00\ntimer B00 AF2\ndma pin B00 0\nserial UART1 0 115200\nbeeper -RX_LOST\nbeacon RX_SET\nmode_color 0 1 11\naux 0 0 0 900 900 0 0\nvtxtable powerlabels\nmmix reset\nsmix reset';
+assert.equal(compareDump(rows, rows).unchecked.length, 0);
+assert.equal(compareDump(rows, rows).mismatched.length, 0);
+assert.equal(compareDump(rows, rows.replace('resource MOTOR 1 B00', 'resource MOTOR 1 B01')).mismatched.length, 1);
+assert.equal(compareDump(rows, rows.replace('mcu_id 123', 'mcu_id 456')).mismatched.length, 1);
+assert.equal(compareDump(rows, rows.replace('beeper -RX_LOST', 'beeper RX_LOST')).mismatched.length, 1);
+assert.equal(compareDump(rows, rows + '\nmmix 0 1 0 0 0').mismatched.length, 1);
+assert.equal(compareDump('future_command 1', rows).unchecked.length, 1);
+assert.equal(compareDump('resource MOTOR 1 B00\nresource MOTOR 1 B01', 'resource MOTOR 1 B01').mismatched.length, 0);

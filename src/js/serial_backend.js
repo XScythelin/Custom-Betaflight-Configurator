@@ -1010,6 +1010,7 @@ function checkReportProblem(problemName, problems) {
 }
 
 async function checkReportProblems() {
+    const { ddDumpBusy } = await import("../composables/ddOperationState");
     try {
         await MSP.promise(MSPCodes.MSP_STATUS);
     } catch (error) {
@@ -1028,7 +1029,7 @@ async function checkReportProblems() {
             checkReportProblem("ACC_NEEDS_CALIBRATION", problems) || needsProblemReportingDialog;
     }
 
-    if (needsProblemReportingDialog) {
+    if (needsProblemReportingDialog && !ddDumpBusy.value) {
         const dialogStore = useDialogStore();
         dialogStore.open("ReportProblemsDialog", { problems }, { close: () => dialogStore.close() });
     }

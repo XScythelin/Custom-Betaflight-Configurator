@@ -1,7 +1,22 @@
 ![Betaflight](https://raw.githubusercontent.com/betaflight/.github/main/profile/images/bf_logo.svg#gh-light-mode-only)
 ![Betaflight](https://raw.githubusercontent.com/betaflight/.github/main/profile/images/bf_logo_dark.svg#gh-dark-mode-only)
 
-# Betaflight App
+# Custom Betaflight Configurator
+
+Пользовательская версия на базе стабильного Betaflight Configurator **2026.6.2**:
+быстрая прошивка локального HEX и загрузка дампа с проверкой сохранённых настроек.
+
+**Запуск на Windows:** полностью распакуйте готовый переносимый архив и откройте
+`Запустить.cmd`. Нужен Chrome или Edge. Установка Node.js и npm не требуется,
+если в архив включены `.runtime/node` и готовая сборка `src/dist`.
+
+**GitHub → Code → Download ZIP содержит исходники, а не готовую переносимую сборку.**
+Подробности запуска, сборки и состава переносимого архива:
+[ЛОКАЛЬНЫЙ-ЗАПУСК.md](ЛОКАЛЬНЫЙ-ЗАПУСК.md).
+
+Ниже сохранена документация исходного проекта Betaflight.
+
+## Betaflight App
 
 [![Latest version](https://img.shields.io/github/v/release/betaflight/betaflight-configurator)](https://github.com/betaflight/betaflight-configurator/releases)
 [![Build](https://img.shields.io/github/actions/workflow/status/betaflight/betaflight-configurator/deploy.yml?branch=master)](https://github.com/betaflight/betaflight-configurator/actions/workflows/deploy.yml)

@@ -24,6 +24,7 @@ import NotificationManager from "../utils/notifications";
 import { get as getConfig } from "../ConfigStorage";
 import { getOS } from "../utils/checkCompatibility";
 import WebUsbDfuTransport from "./WebUsbDfuTransport";
+import { afterDfuDelay } from "./dfuDelay";
 
 // Error constant used when an already-authorized DFU device isn't found
 export const DFU_AUTH_REQUIRED = "DFU_AUTH_REQUIRED";
@@ -1136,7 +1137,7 @@ export class UsbDfuProtocol extends EventTarget {
                                 if (data[4] === this.state.dfuDNBUSY) {
                                     const delay = data[1] | (data[2] << 8) | (data[3] << 16);
 
-                                    setTimeout(() => {
+                                    afterDfuDelay(() => {
                                         this.controlTransfer("in", this.request.GETSTATUS, 0, 0, 6, 0, (data) => {
                                             if (data[4] === this.state.dfuDNLOAD_IDLE) {
                                                 // update progress bar
