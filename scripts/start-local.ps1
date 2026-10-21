@@ -35,7 +35,11 @@ try {
         if ($serverId -match '^\d+$') {
             $candidate = Get-CimInstance Win32_Process -Filter "ProcessId = $serverId" -ErrorAction SilentlyContinue
             if ($candidate -and $candidate.CommandLine.Contains($vite)) {
-                $server = $candidate
+                if ((Get-Item -LiteralPath $vite).LastWriteTime -gt $candidate.CreationDate) {
+                    Stop-Process -Id $candidate.ProcessId
+                } else {
+                    $server = $candidate
+                }
             }
         }
     }

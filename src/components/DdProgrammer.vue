@@ -15,6 +15,32 @@
                 >Загрузить дамп и проверить</UButton
             >
         </div>
+        <div class="flex flex-wrap gap-3 mt-3">
+            <UButton
+                size="xl"
+                class="text-base"
+                icon="i-lucide-activity"
+                :disabled="actionsBusy"
+                @click="perform('gyro')"
+                >Калибровка гироскопа</UButton
+            >
+            <UButton
+                size="xl"
+                class="text-base"
+                icon="i-lucide-axis-3d"
+                :disabled="actionsBusy"
+                @click="accConfirmation = true"
+                >Калибровка акселерометра</UButton
+            >
+            <UButton
+                size="xl"
+                class="text-base"
+                icon="i-lucide-terminal"
+                :disabled="actionsBusy"
+                @click="perform('cli')"
+                >Открыть CLI</UButton
+            >
+        </div>
         <p v-if="error" role="alert">{{ error }}</p>
         <UModal v-model:open="dumpDeviceSelectionOpen" title="Выберите полётник для загрузки дампа">
             <template #body>
@@ -39,6 +65,8 @@
 <script setup lang="ts">
 import { useDdProgrammer } from "../composables/useDdProgrammer";
 import { useDdDump } from "../composables/useDdDump";
+import { useDdQuickActions } from "../composables/useDdQuickActions";
+const { busy: actionsBusy, perform, accConfirmation } = useDdQuickActions();
 const { chooseHex, error, deviceSelectionOpen, selectDevice } = useDdProgrammer();
 const { chooseDump, busy, dumpDeviceSelectionOpen, selectDumpDevice, deviceError } = useDdDump();
 </script>

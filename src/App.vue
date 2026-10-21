@@ -57,6 +57,7 @@
         </div>
         <GlobalDialogs />
         <DdDumpReport />
+        <DdQuickActionDialogs />
     </UApp>
 </template>
 
@@ -66,6 +67,7 @@ import { useMediaQuery } from "@vueuse/core";
 import ConnectButton from "./components/device-picker/ConnectButton.vue";
 import GlobalDialogs from "./components/dialogs/GlobalDialogs.vue";
 import DdDumpReport from "./components/DdDumpReport.vue";
+import DdQuickActionDialogs from "./components/DdQuickActionDialogs.vue";
 import Sidebar from "./components/sidebar/Sidebar.vue";
 import FCModule from "./js/fc.js";
 import MSPModule from "./js/msp.js";

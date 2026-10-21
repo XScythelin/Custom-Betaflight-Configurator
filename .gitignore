@@ -60,3 +60,5 @@ components.d.ts
 # Portable Windows launcher runtime and local logs
 /.runtime/
 /.local-run/
+/tools/gyro-monitor/.venv/
+__pycache__/
