@@ -170,7 +170,7 @@ export default defineConfig({
         },
     },
     test: {
-        include: ["test/**/*.test.{js,mjs,cjs}"],
+        include: ["test/**/*.test.{js,mjs,cjs,ts}"],
         environment: "jsdom",
         setupFiles: ["test/setup.js"],
         root: ".",

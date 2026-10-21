@@ -8,6 +8,7 @@ import { connectDisconnect } from '../js/serial_backend';
 import { send, isMspCliSupported, scheduleReconnect } from './useMspCliSession';
 import { switchTab } from '../js/tab_switch';
 import { compareDump, dumpCommands } from '../js/utils/ddDumpComparison';
+import { disconnectAfterSuccess } from './ddDisconnect';
 
 const busy = ddDumpBusy;
 const opened = ref(false);
@@ -46,6 +47,7 @@ export function useDdDump() {
         const errors: string[] = [];
         const autoConnect = DeviceHandler.devicePicker.autoConnect;
         let locked = false;
+        let completed = false;
         try {
             const text = await file.text();
             const commands = dumpCommands(text);
@@ -108,12 +110,17 @@ export function useDdDump() {
             const checked = comparison.matched.length + comparison.mismatched.length;
             report.value = `Файл: ${file.name}\nОтправлено CLI-команд: ${toApply.length} + save\n\nВерсия установленной прошивки (version):\n${after.join('\n')}\n\nПроверено итоговых параметров: ${checked}\nСовпало: ${comparison.matched.length}\nРасхождений: ${comparison.mismatched.length}\nКоманд без автоматической проверки: ${comparison.unchecked.length}\n\n${comparison.mismatched.join('\n')}\n\nНе проверенные автоматически команды:\n${comparison.unchecked.join('\n')}\n\nСчитанный dump all:\n${dump.join('\n')}`;
             status.value = comparison.mismatched.length ? 'Есть расхождения.' : comparison.unchecked.length ? 'Проверенные параметры совпали. Проверка неполная — см. список команд.' : 'Все сравниваемые параметры совпали после перезагрузки.';
+            if (!comparison.mismatched.length && !comparison.unchecked.length) {
+                await disconnectAfterSuccess();
+                completed = true;
+                status.value += ' Полётник отключён.';
+            }
         } catch (error) {
             status.value = 'Операция не завершена успешно.';
             report.value += `\n${String((error as Error)?.message ?? error)}\n${errors.join('\n')}`;
         } finally {
             if (locked) GUI.connect_lock = false;
-            DeviceHandler.devicePicker.autoConnect = autoConnect;
+            DeviceHandler.devicePicker.autoConnect = completed ? false : autoConnect;
             busy.value = false;
         }
     }

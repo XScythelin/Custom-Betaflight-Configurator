@@ -219,6 +219,11 @@ MspHelper.prototype.process_data = function (dataHandler) {
     if (!crcError) {
         if (!dataHandler.unsupported) {
             switch (code) {
+                case MSPCodes.MSP2_VT_GYRO_RECAL_START:
+                case MSPCodes.MSP2_VT_GYRO_RECAL_RESULT:
+                case MSPCodes.MSP2_VT_GYRO_GROUND_SAVE:
+                    // Custom firmware replies are handled by the calibration session.
+                    break;
                 case MSPCodes.MSP_STATUS:
                     FC.CONFIG.cycleTime = data.readU16();
                     FC.CONFIG.i2cError = data.readU16();

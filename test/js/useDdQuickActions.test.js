@@ -14,13 +14,17 @@ const mock = vi.hoisted(() => ({
     },
     request: vi.fn(),
     connect: vi.fn(),
+    disconnect: vi.fn(),
+    send: vi.fn(),
     switchTab: vi.fn(() => true),
 }));
 vi.mock("../../src/js/gui", () => ({ default: mock.gui }));
 vi.mock("../../src/js/fc", () => ({ default: mock.fc }));
 vi.mock("../../src/js/data_storage", () => ({ default: mock.config }));
 vi.mock("../../src/js/device_handler", () => ({ default: mock.devices }));
-vi.mock("../../src/js/serial_backend", () => ({ connectDisconnect: mock.connect }));
+vi.mock("../../src/js/serial_backend", () => ({ connectDisconnect: mock.connect, disconnect: mock.disconnect }));
+vi.mock("../../src/composables/useMspCliSession", () => ({ send: mock.send, isMspCliSupported: () => true }));
+vi.mock("../../src/composables/useDdGyroCalibration", () => ({ calibrateAndSaveGyro: vi.fn() }));
 vi.mock("../../src/js/tab_switch", () => ({ switchTab: mock.switchTab }));
 vi.mock("../../src/js/msp", () => ({ default: { promise: mock.request } }));
 
@@ -36,6 +40,10 @@ describe("home quick actions safety", () => {
         mock.config.connectionValid = true;
         mock.config.cliActive = false;
         mock.gui.connect_lock = false;
+        mock.devices.devicePicker.autoConnect = true;
+        mock.disconnect.mockImplementation(() => {
+            mock.config.connectionValid = false;
+        });
         mock.fc.CONFIG.mode = 0;
         mock.fc.CONFIG.activeSensors = 1;
         mock.fc.CONFIG.configurationProblems = 0;
@@ -89,5 +97,47 @@ describe("home quick actions safety", () => {
         await vi.advanceTimersByTimeAsync(2600);
         await operation;
         expect(actions.message.value).toContain("всё ещё");
+    });
+    it("disconnects after successful accelerometer calibration and disables auto connect", async () => {
+        const operation = useDdQuickActions().perform("acc");
+        await vi.advanceTimersByTimeAsync(2600);
+        await operation;
+        expect(mock.disconnect).toHaveBeenCalledOnce();
+        expect(mock.devices.devicePicker.autoConnect).toBe(false);
+    });
+    it.each(["gyroAutoOn", "gyroAutoOff"])(
+        "does not save or disconnect when %s setting is rejected",
+        async (action) => {
+            mock.send.mockResolvedValue(["###ERROR: invalid name"]);
+            await useDdQuickActions().perform(action);
+            expect(mock.send).toHaveBeenCalledTimes(1);
+            expect(mock.disconnect).not.toHaveBeenCalled();
+        },
+    );
+    it.each([
+        ["gyroAutoOn", "ON"],
+        ["gyroAutoOff", "OFF"],
+    ])("saves acknowledged %s setting and disconnects", async (action, value) => {
+        mock.send.mockResolvedValueOnce([`gyro_cal_on_startup set to ${value}`]).mockResolvedValueOnce(["# saving"]);
+        await useDdQuickActions().perform(action);
+        expect(mock.send.mock.calls.map((call) => call[0])).toEqual([
+            `set gyro_cal_on_startup = ${value}`,
+            "save noreboot",
+        ]);
+        expect(mock.disconnect).toHaveBeenCalledOnce();
+    });
+    it("saves USB streaming port and disconnects", async () => {
+        mock.send.mockResolvedValueOnce(["msp_telemetry_stream_port set to 20"]).mockResolvedValueOnce(["# saving"]);
+        await useDdQuickActions().perform("streamUsb");
+        expect(mock.send.mock.calls.map((call) => call[0])).toEqual([
+            "set msp_telemetry_stream_port = 20",
+            "save noreboot",
+        ]);
+        expect(mock.disconnect).toHaveBeenCalledOnce();
+    });
+    it("disconnects after acknowledged gyro calibration and save", async () => {
+        await useDdQuickActions().perform("gyroCalibrate");
+        expect(mock.disconnect).toHaveBeenCalledOnce();
+        expect(mock.devices.devicePicker.autoConnect).toBe(false);
     });
 });
