@@ -127,10 +127,16 @@ describe("home quick actions safety", () => {
         expect(mock.disconnect).toHaveBeenCalledOnce();
     });
     it("saves USB streaming port and disconnects", async () => {
-        mock.send.mockResolvedValueOnce(["msp_telemetry_stream_port set to 20"]).mockResolvedValueOnce(["# saving"]);
+        mock.send
+            .mockResolvedValueOnce(["msp_telemetry_stream_port set to 20"])
+            .mockResolvedValueOnce(["serialrx_halfduplex set to OFF"])
+            .mockResolvedValueOnce(["serial_update_rate_hz set to 1000"])
+            .mockResolvedValueOnce(["# saving"]);
         await useDdQuickActions().perform("streamUsb");
         expect(mock.send.mock.calls.map((call) => call[0])).toEqual([
             "set msp_telemetry_stream_port = 20",
+            "set serialrx_halfduplex = OFF",
+            "set serial_update_rate_hz = 1000",
             "save noreboot",
         ]);
         expect(mock.disconnect).toHaveBeenCalledOnce();

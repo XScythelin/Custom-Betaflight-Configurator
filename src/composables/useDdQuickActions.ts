@@ -153,7 +153,11 @@ export function useDdQuickActions() {
                     action === "streamRestore"
                         ? streamSettings
                         : action === "streamUsb"
-                          ? new Map([["msp_telemetry_stream_port", "20"]])
+                          ? new Map([
+                                ["msp_telemetry_stream_port", "20"],
+                                ["serialrx_halfduplex", "OFF"],
+                                ["serial_update_rate_hz", "1000"],
+                            ])
                           : new Map([["gyro_cal_on_startup", value]]);
                 if (!settings?.size) throw new Error("Сначала выберите файл дампа с настройками стриминга.");
                 message.value = "Применение настроек…";
