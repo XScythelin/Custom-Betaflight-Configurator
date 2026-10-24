@@ -24,7 +24,12 @@ export function decodeGyroResult(data: DataView): number[][] {
     return records;
 }
 
-function exchange(command: number, expected: number): Promise<number[][]> {
+export function calibrationExchange<T>(
+    command: number,
+    expected: number,
+    decode: (data: DataView) => T,
+    sensor: string,
+): Promise<T> {
     return new Promise((resolve, reject) => {
         let timer: ReturnType<typeof setTimeout>;
         const cleanup = () => {
@@ -39,12 +44,12 @@ function exchange(command: number, expected: number): Promise<number[][]> {
         const listener = (frame: Frame) => {
             if (frame.code !== expected && frame.code !== command) return;
             if (frame.crcError || frame.unsupported) {
-                fail(new Error("Повреждённый ответ или команда гироскопа не поддерживается прошивкой."));
+                fail(new Error(`Повреждённый ответ или команда (${sensor}) не поддерживается прошивкой.`));
                 return;
             }
             if (frame.code !== expected) return;
             try {
-                const result = decodeGyroResult(frame.dataView);
+                const result = decode(frame.dataView);
                 cleanup();
                 resolve(result);
             } catch (error) {
@@ -53,7 +58,7 @@ function exchange(command: number, expected: number): Promise<number[][]> {
         };
         MSP.listen(listener);
         timer = setTimeout(
-            () => fail(new Error("Нет ответа гироскопа за 35 секунд. Результат неизвестен; команда не повторялась.")),
+            () => fail(new Error(`Нет ответа (${sensor}) за 35 секунд. Результат неизвестен; команда не повторялась.`)),
             35000,
         );
         if (!serial.connected) {
@@ -74,8 +79,18 @@ function exchange(command: number, expected: number): Promise<number[][]> {
 }
 
 export async function calibrateAndSaveGyro(onReply: (stage: "calibrate" | "save", values: number[][]) => void) {
-    const calibrated = await exchange(MSPCodes.MSP2_VT_GYRO_RECAL_START, MSPCodes.MSP2_VT_GYRO_RECAL_RESULT);
+    const calibrated = await calibrationExchange(
+        MSPCodes.MSP2_VT_GYRO_RECAL_START,
+        MSPCodes.MSP2_VT_GYRO_RECAL_RESULT,
+        decodeGyroResult,
+        "гироскоп",
+    );
     onReply("calibrate", calibrated);
-    const saved = await exchange(MSPCodes.MSP2_VT_GYRO_GROUND_SAVE, MSPCodes.MSP2_VT_GYRO_GROUND_SAVE);
+    const saved = await calibrationExchange(
+        MSPCodes.MSP2_VT_GYRO_GROUND_SAVE,
+        MSPCodes.MSP2_VT_GYRO_GROUND_SAVE,
+        decodeGyroResult,
+        "гироскоп",
+    );
     onReply("save", saved);
 }

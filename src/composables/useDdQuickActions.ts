@@ -9,17 +9,30 @@ import MSP from "../js/msp";
 import MSPCodes from "../js/msp/MSPCodes";
 import { ddDumpBusy } from "./ddOperationState";
 import { calibrateAndSaveGyro } from "./useDdGyroCalibration";
+import { calibrateAndSaveBaro } from "./useDdBaroCalibration";
 import { disconnectAfterSuccess } from "./ddDisconnect";
 import { send, isMspCliSupported } from "./useMspCliSession";
 import { settingAcknowledged, streamSettingsFromDump } from "./ddCliSettings";
 
-type Action = "gyro" | "acc" | "cli" | "gyroCalibrate" | "gyroAutoOff" | "gyroAutoOn" | "streamUsb" | "streamRestore";
+type Action =
+    | "gyro"
+    | "acc"
+    | "cli"
+    | "gyroCalibrate"
+    | "gyroAutoOff"
+    | "gyroAutoOn"
+    | "streamUsb"
+    | "streamRestore"
+    | "baroCalibrate"
+    | "baroAutoOn"
+    | "baroAutoOff";
 const running = ref(false);
 const message = ref("");
 const opened = ref(false);
 const needsPort = ref(false);
 const accConfirmation = ref(false);
 const gyroConfirmation = ref(false);
+const baroConfirmation = ref(false);
 const replies = ref("");
 const pending = ref<Action | null>(null);
 let streamSettings: Map<string, string> | null = null;
@@ -141,14 +154,31 @@ export function useDdQuickActions() {
                 message.value = "Калибровка и сохранение подтверждены полётником. Полётник отключён.";
                 return;
             }
+            if (action === "baroCalibrate") {
+                if (!(FC.CONFIG.activeSensors & 2)) throw new Error("Барометр не обнаружен или отключён в прошивке.");
+                message.value = "Калибровка барометра… Не двигайте плату, избегайте потоков воздуха.";
+                await calibrateAndSaveBaro((stage, result) => {
+                    replies.value += `${stage === "calibrate" ? "Калибровка" : "Сохранение"} барометра: получен успешный ответ\nДавление: ${result.pressurePa} Па; высота нуля: ${result.altitudeCm / 100} м; отсчётов: ${result.samples}\n`;
+                    message.value =
+                        stage === "calibrate"
+                            ? "Калибровка подтверждена. Сохранение в EEPROM…"
+                            : "Сохранение барометра подтверждено.";
+                });
+                await disconnectAfterSuccess();
+                message.value = "Калибровка и сохранение барометра подтверждены. Полётник отключён.";
+                return;
+            }
             if (
                 action === "gyroAutoOff" ||
                 action === "gyroAutoOn" ||
+                action === "baroAutoOn" ||
+                action === "baroAutoOff" ||
                 action === "streamUsb" ||
                 action === "streamRestore"
             ) {
                 if (!isMspCliSupported()) throw new Error("Прошивка не поддерживает MSP CLI.");
-                const value = action === "gyroAutoOn" ? "ON" : "OFF";
+                const baroAction = action === "baroAutoOn" || action === "baroAutoOff";
+                const value = action === "gyroAutoOn" || action === "baroAutoOff" ? "ON" : "OFF";
                 const settings =
                     action === "streamRestore"
                         ? streamSettings
@@ -158,7 +188,7 @@ export function useDdQuickActions() {
                                 ["serialrx_halfduplex", "OFF"],
                                 ["serial_update_rate_hz", "1000"],
                             ])
-                          : new Map([["gyro_cal_on_startup", value]]);
+                          : new Map([[baroAction ? "baro_use_saved_zero" : "gyro_cal_on_startup", value]]);
                 if (!settings?.size) throw new Error("Сначала выберите файл дампа с настройками стриминга.");
                 message.value = "Применение настроек…";
                 for (const [name, setting] of settings) {
@@ -183,7 +213,9 @@ export function useDdQuickActions() {
                         ? "Стриминг на USB включён. Сохранение подтверждено. Полётник отключён."
                         : action === "streamRestore"
                           ? "Настройки стриминга из дампа сохранены. Полётник отключён."
-                          : `Автокалибровка гироскопа ${value === "ON" ? "включена" : "отключена"}. Сохранение подтверждено. Полётник отключён.`;
+                          : baroAction
+                            ? `Калибровка барометра при запуске ${action === "baroAutoOn" ? "включена" : "отключена"}. Сохранение подтверждено. Полётник отключён.`
+                            : `Автокалибровка гироскопа ${value === "ON" ? "включена" : "отключена"}. Сохранение подтверждено. Полётник отключён.`;
                 return;
             }
             if (!(FC.CONFIG.activeSensors & 1)) throw new Error("Акселерометр не обнаружен или отключён в прошивке.");
@@ -255,6 +287,7 @@ export function useDdQuickActions() {
         needsPort,
         accConfirmation,
         gyroConfirmation,
+        baroConfirmation,
         replies,
         perform,
         selectPort,

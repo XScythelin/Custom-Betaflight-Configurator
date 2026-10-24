@@ -25,6 +25,7 @@ vi.mock("../../src/js/device_handler", () => ({ default: mock.devices }));
 vi.mock("../../src/js/serial_backend", () => ({ connectDisconnect: mock.connect, disconnect: mock.disconnect }));
 vi.mock("../../src/composables/useMspCliSession", () => ({ send: mock.send, isMspCliSupported: () => true }));
 vi.mock("../../src/composables/useDdGyroCalibration", () => ({ calibrateAndSaveGyro: vi.fn() }));
+vi.mock("../../src/composables/useDdBaroCalibration", () => ({ calibrateAndSaveBaro: vi.fn() }));
 vi.mock("../../src/js/tab_switch", () => ({ switchTab: mock.switchTab }));
 vi.mock("../../src/js/msp", () => ({ default: { promise: mock.request } }));
 
@@ -145,5 +146,23 @@ describe("home quick actions safety", () => {
         await useDdQuickActions().perform("gyroCalibrate");
         expect(mock.disconnect).toHaveBeenCalledOnce();
         expect(mock.devices.devicePicker.autoConnect).toBe(false);
+    });
+    it.each([
+        ["baroAutoOn", "OFF"],
+        ["baroAutoOff", "ON"],
+    ])("persists %s using the inverse saved-zero flag", async (action, value) => {
+        mock.send.mockResolvedValueOnce([`baro_use_saved_zero set to ${value}`]).mockResolvedValueOnce(["# saving"]);
+        await useDdQuickActions().perform(action);
+        expect(mock.send.mock.calls.map((call) => call[0])).toEqual([
+            `set baro_use_saved_zero = ${value}`,
+            "save noreboot",
+        ]);
+        expect(mock.disconnect).toHaveBeenCalledOnce();
+    });
+    it("rejects barometer calibration if no barometer is detected", async () => {
+        const actions = useDdQuickActions();
+        await actions.perform("baroCalibrate");
+        expect(actions.message.value).toContain("Барометр не обнаружен");
+        expect(mock.disconnect).not.toHaveBeenCalled();
     });
 });

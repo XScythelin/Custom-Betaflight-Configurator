@@ -222,6 +222,9 @@ MspHelper.prototype.process_data = function (dataHandler) {
                 case MSPCodes.MSP2_VT_GYRO_RECAL_START:
                 case MSPCodes.MSP2_VT_GYRO_RECAL_RESULT:
                 case MSPCodes.MSP2_VT_GYRO_GROUND_SAVE:
+                case MSPCodes.MSP2_VT_BARO_CAL_START:
+                case MSPCodes.MSP2_VT_BARO_CAL_RESULT:
+                case MSPCodes.MSP2_VT_BARO_GROUND_SAVE:
                     // Custom firmware replies are handled by the calibration session.
                     break;
                 case MSPCodes.MSP_STATUS:

@@ -1,18 +1,18 @@
 <template>
     <section class="p-4">
-        <h2 class="text-2xl font-semibold mb-4">Автоматический настройщик</h2>
-        <ol class="flex flex-col gap-3 list-none p-0">
+        <h2 class="text-lg font-semibold mb-3">Автоматический настройщик</h2>
+        <ol class="flex flex-col gap-2 list-none p-0">
             <li class="flex items-center gap-3">
                 <span class="text-xl font-semibold" aria-hidden="true">1)</span>
-                <UButton size="xl" class="text-base" icon="i-lucide-zap" :disabled="busy" @click="chooseHex"
+                <UButton size="md" class="text-sm" icon="i-lucide-zap" :disabled="busy" @click="chooseHex"
                     >Выбрать HEX и прошить</UButton
                 >
             </li>
             <li class="flex items-center gap-3">
                 <span class="text-xl font-semibold" aria-hidden="true">2)</span>
                 <UButton
-                    size="xl"
-                    class="text-base"
+                    size="md"
+                    class="text-sm"
                     icon="i-lucide-file-check"
                     :loading="busy"
                     :disabled="busy"
@@ -23,8 +23,8 @@
             <li class="flex items-center gap-3">
                 <span class="text-xl font-semibold" aria-hidden="true">3)</span>
                 <UButton
-                    size="xl"
-                    class="text-base"
+                    size="md"
+                    class="text-sm"
                     icon="i-lucide-axis-3d"
                     :disabled="actionsBusy"
                     @click="accConfirmation = true"
@@ -34,61 +34,88 @@
             <li class="flex items-center gap-3">
                 <span class="text-xl font-semibold" aria-hidden="true">4)</span>
                 <UButton
-                    size="xl"
-                    class="text-base"
+                    size="md"
+                    class="text-sm"
                     icon="i-lucide-activity"
                     :disabled="actionsBusy"
                     @click="gyroConfirmation = true"
                     >Калибровка гироскопа</UButton
                 >
             </li>
-        </ol>
-        <section class="mt-6" aria-label="Дополнительные инструменты">
-            <h3 class="text-lg font-semibold mb-3">Дополнительные инструменты</h3>
-            <div class="flex flex-col items-start gap-3">
+            <li class="flex items-center gap-3">
+                <span class="text-xl font-semibold" aria-hidden="true">5)</span>
                 <UButton
-                    size="xl"
-                    class="text-base"
+                    size="md"
+                    class="text-sm"
+                    icon="i-lucide-gauge"
+                    :disabled="actionsBusy"
+                    @click="baroConfirmation = true"
+                    >Калибровать барометр</UButton
+                >
+            </li>
+        </ol>
+        <section class="mt-4" aria-label="Дополнительные инструменты">
+            <h3 class="text-lg font-semibold mb-3">Дополнительные инструменты</h3>
+            <div class="flex flex-col items-start gap-2">
+                <UButton
+                    size="md"
+                    class="text-sm"
+                    icon="i-lucide-power"
+                    :disabled="actionsBusy"
+                    @click="perform('baroAutoOn')"
+                    >Включить калибровку барометра</UButton
+                >
+                <UButton
+                    size="md"
+                    class="text-sm"
+                    icon="i-lucide-power-off"
+                    :disabled="actionsBusy"
+                    @click="perform('baroAutoOff')"
+                    >Отключить калибровку барометра</UButton
+                >
+                <UButton
+                    size="md"
+                    class="text-sm"
                     icon="i-lucide-power"
                     :disabled="actionsBusy"
                     @click="perform('gyroAutoOn')"
                     >Включить автокалибровку гироскопа</UButton
                 >
                 <UButton
-                    size="xl"
-                    class="text-base"
+                    size="md"
+                    class="text-sm"
                     icon="i-lucide-power-off"
                     :disabled="actionsBusy"
                     @click="perform('gyroAutoOff')"
                     >Отключить автокалибровку гироскопа</UButton
                 >
                 <UButton
-                    size="xl"
-                    class="text-base"
+                    size="md"
+                    class="text-sm"
                     icon="i-lucide-usb"
                     :disabled="actionsBusy"
                     @click="perform('streamUsb')"
                     >Включить стриминг на USB</UButton
                 >
                 <UButton
-                    size="xl"
-                    class="text-base"
+                    size="md"
+                    class="text-sm"
                     icon="i-lucide-file-input"
                     :disabled="actionsBusy"
                     @click="chooseStreamDump"
                     >Вернуть стриминг в норму</UButton
                 >
                 <UButton
-                    size="xl"
-                    class="text-base"
+                    size="md"
+                    class="text-sm"
                     icon="i-lucide-activity"
                     :disabled="actionsBusy"
                     @click="perform('gyro')"
                     >Проверка гироскопа</UButton
                 >
                 <UButton
-                    size="xl"
-                    class="text-base"
+                    size="md"
+                    class="text-sm"
                     icon="i-lucide-terminal"
                     :disabled="actionsBusy"
                     @click="perform('cli')"
@@ -121,7 +148,14 @@
 import { useDdProgrammer } from "../composables/useDdProgrammer";
 import { useDdDump } from "../composables/useDdDump";
 import { useDdQuickActions } from "../composables/useDdQuickActions";
-const { busy: actionsBusy, perform, accConfirmation, gyroConfirmation, chooseStreamDump } = useDdQuickActions();
+const {
+    busy: actionsBusy,
+    perform,
+    accConfirmation,
+    gyroConfirmation,
+    baroConfirmation,
+    chooseStreamDump,
+} = useDdQuickActions();
 const { chooseHex, error, deviceSelectionOpen, selectDevice } = useDdProgrammer();
 const { chooseDump, busy, dumpDeviceSelectionOpen, selectDumpDevice, deviceError } = useDdDump();
 </script>
