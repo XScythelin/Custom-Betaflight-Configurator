@@ -178,7 +178,7 @@ export function useDdQuickActions() {
             ) {
                 if (!isMspCliSupported()) throw new Error("Прошивка не поддерживает MSP CLI.");
                 const baroAction = action === "baroAutoOn" || action === "baroAutoOff";
-                const value = action === "gyroAutoOn" || action === "baroAutoOff" ? "ON" : "OFF";
+                const value = action === "gyroAutoOn" || action === "baroAutoOn" ? "ON" : "OFF";
                 const settings =
                     action === "streamRestore"
                         ? streamSettings
@@ -214,7 +214,7 @@ export function useDdQuickActions() {
                         : action === "streamRestore"
                           ? "Настройки стриминга из дампа сохранены. Полётник отключён."
                           : baroAction
-                            ? `Калибровка барометра при запуске ${action === "baroAutoOn" ? "включена" : "отключена"}. Сохранение подтверждено. Полётник отключён.`
+                             ? `Использование сохранённого нуля барометра ${value === "ON" ? "включено" : "отключено"}. Сохранение подтверждено. Полётник отключён.`
                             : `Автокалибровка гироскопа ${value === "ON" ? "включена" : "отключена"}. Сохранение подтверждено. Полётник отключён.`;
                 return;
             }

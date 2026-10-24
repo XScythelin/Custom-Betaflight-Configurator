@@ -148,9 +148,9 @@ describe("home quick actions safety", () => {
         expect(mock.devices.devicePicker.autoConnect).toBe(false);
     });
     it.each([
-        ["baroAutoOn", "OFF"],
-        ["baroAutoOff", "ON"],
-    ])("persists %s using the inverse saved-zero flag", async (action, value) => {
+        ["baroAutoOn", "ON"],
+        ["baroAutoOff", "OFF"],
+    ])("persists %s using the corresponding saved-zero flag", async (action, value) => {
         mock.send.mockResolvedValueOnce([`baro_use_saved_zero set to ${value}`]).mockResolvedValueOnce(["# saving"]);
         await useDdQuickActions().perform(action);
         expect(mock.send.mock.calls.map((call) => call[0])).toEqual([
