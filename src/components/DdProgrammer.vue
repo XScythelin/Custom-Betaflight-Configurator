@@ -108,6 +108,14 @@
                 <UButton
                     size="md"
                     class="text-sm"
+                    icon="i-lucide-sliders-horizontal"
+                    :disabled="actionsBusy"
+                    @click="perform('gyroInject')"
+                    >Выбор смещения калибровки</UButton
+                >
+                <UButton
+                    size="md"
+                    class="text-sm"
                     icon="i-lucide-activity"
                     :disabled="actionsBusy"
                     @click="perform('gyro')"

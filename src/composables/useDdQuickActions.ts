@@ -16,6 +16,7 @@ import { settingAcknowledged, streamSettingsFromDump } from "./ddCliSettings";
 
 type Action =
     | "gyro"
+    | "gyroInject"
     | "acc"
     | "cli"
     | "gyroCalibrate"
@@ -78,7 +79,7 @@ export function useDdQuickActions() {
         opened.value = true;
         message.value = "";
         replies.value = "";
-        if (action !== "gyro" && !CONFIGURATOR.connectionValid) {
+        if (action !== "gyro" && action !== "gyroInject" && !CONFIGURATOR.connectionValid) {
             const ports = DeviceHandler.currentSerialPorts;
             const selected = ports.find((device) => device.path === DeviceHandler.devicePicker.selectedDevice);
             if (!selected && ports.length === 1) DeviceHandler.devicePicker.selectedDevice = ports[0].path;
@@ -92,7 +93,8 @@ export function useDdQuickActions() {
         ddDumpBusy.value = true;
         let locked = false;
         try {
-            if (action === "gyro") {
+            if (action === "gyro" || action === "gyroInject") {
+                const injecting = action === "gyroInject";
                 if (location.origin !== "http://127.0.0.1:8080")
                     throw new Error("Запустите локальную версию через Запустить.cmd.");
                 if (CONFIGURATOR.cliActive) throw new Error("Сначала выйдите из CLI, затем повторите запуск монитора.");
@@ -105,11 +107,12 @@ export function useDdQuickActions() {
                 }
                 GUI.connect_lock = true;
                 locked = true;
-                message.value =
-                    "Монитор открыт в отдельном окне. Выберите COM-порт. C — калибровка, S — сохранить. Не двигайте плату при калибровке. Для возврата закройте монитор (Q). Подключение в конфигураторе заблокировано до закрытия монитора.";
-                const response = await fetch("/__local_tools/gyro", {
+                message.value = injecting
+                    ? "Выбор смещения открыт в отдельном окне. Снимите пропеллеры. Только стенд: с внесённой ошибкой нельзя армить и летать. Закройте окно утилиты для возврата. Подключение заблокировано до закрытия окна."
+                    : "Монитор открыт в отдельном окне. Выберите COM-порт. C — калибровка, S — сохранить. Не двигайте плату при калибровке. Для возврата закройте монитор (Q). Подключение в конфигураторе заблокировано до закрытия монитора.";
+                const response = await fetch(injecting ? "/__local_tools/gyro-inject" : "/__local_tools/gyro", {
                     method: "POST",
-                    headers: { "X-Local-Tool": "gyro-monitor" },
+                    headers: { "X-Local-Tool": injecting ? "gyro-inject" : "gyro-monitor" },
                 });
                 if (response.status === 405 || response.status === 404)
                     throw new Error(
@@ -120,7 +123,7 @@ export function useDdQuickActions() {
                         `Ошибка запуска монитора (HTTP ${response.status}). Проверьте сообщение в его окне и наличие Python с pyserial.`,
                     );
                 message.value =
-                    "Монитор закрыт. Можно снова подключаться к полётнику. Автоподключение оставлено выключенным.";
+                    "Окно утилиты закрыто. Автоподключение оставлено выключенным. Результат операции смотрите в окне утилиты; при внесённой ошибке нельзя армить и летать.";
                 return;
             }
             if (!CONFIGURATOR.connectionValid) {
@@ -214,7 +217,7 @@ export function useDdQuickActions() {
                         : action === "streamRestore"
                           ? "Настройки стриминга из дампа сохранены. Полётник отключён."
                           : baroAction
-                             ? `Использование сохранённого нуля барометра ${value === "ON" ? "включено" : "отключено"}. Сохранение подтверждено. Полётник отключён.`
+                            ? `Использование сохранённого нуля барометра ${value === "ON" ? "включено" : "отключено"}. Сохранение подтверждено. Полётник отключён.`
                             : `Автокалибровка гироскопа ${value === "ON" ? "включена" : "отключена"}. Сохранение подтверждено. Полётник отключён.`;
                 return;
             }

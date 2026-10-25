@@ -8,15 +8,16 @@ const root = realpathSync(fileURLToPath(new URL('../src/dist/', import.meta.url)
 let gyroRunning = false;
 const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.ico': 'image/x-icon', '.woff': 'font/woff', '.woff2': 'font/woff2', '.wasm': 'application/wasm' };
 http.createServer((req, res) => {
-    if (req.url === '/__local_tools/gyro') {
+    if (req.url === '/__local_tools/gyro' || req.url === '/__local_tools/gyro-inject') {
+        const tool = req.url === '/__local_tools/gyro' ? 'gyro-monitor' : 'gyro-inject';
         const origin = 'http://127.0.0.1:8080';
-        if (req.method !== 'POST' || req.headers.origin !== origin || req.headers.host !== '127.0.0.1:8080' || req.headers['x-local-tool'] !== 'gyro-monitor') {
+        if (req.method !== 'POST' || req.headers.origin !== origin || req.headers.host !== '127.0.0.1:8080' || req.headers['x-local-tool'] !== tool) {
             res.writeHead(403).end();
             return;
         }
         if (process.platform !== 'win32') { res.writeHead(400).end('Gyro monitor requires Windows.'); return; }
         if (gyroRunning) { res.writeHead(409).end('Gyro monitor is already running.'); return; }
-        const cwd = fileURLToPath(new URL('../tools/gyro-monitor/', import.meta.url));
+        const cwd = fileURLToPath(new URL(`../tools/${tool}/`, import.meta.url));
         gyroRunning = true;
         const command = "$p = Start-Process -FilePath $env:ComSpec -ArgumentList '/d', '/c', 'launch.cmd' -PassThru -Wait; exit $p.ExitCode";
         const child = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(command, 'utf16le').toString('base64')], { cwd, windowsHide: true, stdio: 'ignore' });

@@ -61,4 +61,9 @@ components.d.ts
 /.runtime/
 /.local-run/
 /tools/gyro-monitor/.venv/
+/tools/gyro-inject/.venv/
 __pycache__/
+
+# Bundled Python sources, not generated build output.
+!/tools/gyro-inject/build/
+!/tools/gyro-inject/build/*.py

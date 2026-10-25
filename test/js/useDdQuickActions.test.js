@@ -55,6 +55,35 @@ describe("home quick actions safety", () => {
     });
     afterEach(() => vi.useRealTimers());
 
+    it("holds the connection lock until the offset utility closes", async () => {
+        vi.stubGlobal("location", { origin: "http://127.0.0.1:8080" });
+        let close;
+        const fetch = vi.fn(
+            () =>
+                new Promise((resolve) => {
+                    close = resolve;
+                }),
+        );
+        vi.stubGlobal("fetch", fetch);
+        try {
+            const operation = useDdQuickActions().perform("gyroInject");
+            expect(fetch).toHaveBeenCalledWith("/__local_tools/gyro-inject", {
+                method: "POST",
+                headers: { "X-Local-Tool": "gyro-inject" },
+            });
+            expect(mock.gui.connect_lock).toBe(true);
+            expect(mock.devices.devicePicker.autoConnect).toBe(false);
+            await useDdQuickActions().perform("cli");
+            expect(mock.switchTab).not.toHaveBeenCalled();
+            close({ ok: true, status: 200 });
+            await operation;
+            expect(mock.gui.connect_lock).toBe(false);
+            expect(mock.devices.devicePicker.autoConnect).toBe(false);
+        } finally {
+            vi.unstubAllGlobals();
+        }
+    });
+
     it("never calibrates an armed controller", async () => {
         mock.fc.CONFIG.mode = 1;
         const actions = useDdQuickActions();
