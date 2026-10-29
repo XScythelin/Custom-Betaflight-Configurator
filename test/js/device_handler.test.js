@@ -76,6 +76,7 @@ vi.mock("../../src/js/utils/checkCompatibility.js", () => ({
 }));
 
 import DeviceHandler from "../../src/js/device_handler";
+import { EventBus } from "../../src/components/eventBus";
 import { getConnectionState, __resetConnectionStateForTests } from "../../src/js/connection_state.js";
 
 // "Reconnect in progress" is now the connection state being in REBOOTING/RECONNECTING
@@ -93,6 +94,7 @@ function resetPortHandler() {
     serial.connected = false;
     serial.connectionId = null;
     dfuProtocol.usbDevice = null;
+    dfuProtocol.transport = undefined;
     isExpertModeEnabled.mockReturnValue(true);
     DeviceHandler.currentSerialPorts = [];
     DeviceHandler.currentUsbPorts = [];
@@ -101,6 +103,34 @@ function resetPortHandler() {
     DeviceHandler.showManualMode = false;
     DeviceHandler.devicePicker.selectedDevice = "noselection";
 }
+
+describe("DFU permission granted after flash was started", () => {
+    beforeEach(resetPortHandler);
+
+    it("notifies the waiting flasher even when an attached device emits no connect event", async () => {
+        const device = { path: "usb_bootloader", displayName: "STM32 Bootloader" };
+        dfuProtocol.requestPermission.mockResolvedValue(device);
+        dfuProtocol.getDevices.mockResolvedValue([device]);
+        await DeviceHandler.requestDevicePermission("usb");
+        expect(DeviceHandler.devicePicker.selectedDevice).toBe(device.path);
+        expect(EventBus.$emit).toHaveBeenCalledWith("device-handler:auto-select-usb-device", device.path);
+    });
+
+    it("does not resume flashing when permission is cancelled", async () => {
+        dfuProtocol.requestPermission.mockResolvedValue(null);
+        await DeviceHandler.requestDevicePermission("usb");
+        expect(EventBus.$emit).not.toHaveBeenCalled();
+    });
+
+    it("does not duplicate native permission events", async () => {
+        const device = { path: "usb_native", displayName: "STM32 Bootloader" };
+        dfuProtocol.transport = { emitsAddedDeviceOnPermissionGrant: true };
+        dfuProtocol.requestPermission.mockResolvedValue(device);
+        dfuProtocol.getDevices.mockResolvedValue([device]);
+        await DeviceHandler.requestDevicePermission("usb");
+        expect(EventBus.$emit).not.toHaveBeenCalled();
+    });
+});
 
 describe("DeviceHandler.selectActivePort — preset/reboot -> virtual regression", () => {
     beforeEach(() => {

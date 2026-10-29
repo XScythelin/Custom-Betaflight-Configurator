@@ -223,6 +223,11 @@ DeviceHandler.requestDevicePermission = async function (protocol) {
             await this.updateDeviceList(protocol);
 
             this.selectActivePort(port);
+
+            // Granting WebUSB access to an attached device does not emit a USB connect event.
+            if (protocol === "usb" && !dfuProtocol.transport?.emitsAddedDeviceOnPermissionGrant) {
+                EventBus.$emit("device-handler:auto-select-usb-device", port.path);
+            }
         } else {
             console.log(`${this.logHead} Permission request cancelled or failed for ${protocol} device`);
         }

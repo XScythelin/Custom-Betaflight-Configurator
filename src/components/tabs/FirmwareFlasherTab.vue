@@ -1128,6 +1128,10 @@ export default defineComponent({
                         const device = await DeviceHandler.dfuProtocol.requestPermission();
                         if (!device) {
                             onCancel();
+                            return;
+                        }
+                        if (!DeviceHandler.dfuProtocol.transport?.emitsAddedDeviceOnPermissionGrant) {
+                            DeviceHandler.dfuProtocol.dispatchEvent(new CustomEvent("addedDevice", { detail: device }));
                         }
                         // handleNewDevice → addedDevice → detectedUsbDevice → startFlashing
                     } catch (e) {

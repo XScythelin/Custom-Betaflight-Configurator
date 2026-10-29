@@ -131,7 +131,11 @@ class STM32Protocol {
                 // activation is still valid if we need to fall back to requestPermission.
                 const device = await DeviceHandler.dfuProtocol.waitForDfu(4000, 500);
                 console.log(`${this.logHead} DFU device found via waitForDfu:`, device);
+                if (this.rebootMode) {
+                    DeviceHandler.dfuProtocol.dispatchEvent(new CustomEvent("addedDevice", { detail: device }));
+                }
             } catch (e) {
+                if (!this.rebootMode) return;
                 if (e.code !== DFU_AUTH_REQUIRED) {
                     console.error(`${this.logHead} waitForDfu error:`, e);
                     this.handleError();
